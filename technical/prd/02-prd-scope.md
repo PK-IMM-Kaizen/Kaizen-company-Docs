@@ -443,8 +443,5 @@ Pengembangan V1 mengikuti prinsip berikut:
 
 ## Navigation
 
-← Product Requirement Document — Overview
-
-Product Requirement Document — Users & Journeys →
-
-```
+- [← Product Requirement Document — Overview](./01-prd-overview.md)
+- [Product Requirement Document — Users & Journeys →](./03-prd-users-and-journeys.md)
