@@ -1,142 +1,145 @@
+# 🧱 Database Schema
 
-# Database Schema
+Dokumen ini berisi inventarisasi tabel aplikasi pada schema `public` dalam database Kaizen Company Platform.
 
-Dokumen ini menjelaskan struktur database Kaizen Company, termasuk tabel, kolom, tipe data, relasi, dan fungsi setiap entitas.
+## 1. Schema Overview
 
-## 1. Database Overview
+Hasil pemeriksaan menunjukkan terdapat 12 tabel aplikasi dengan total 103 kolom.
 
-Database menggunakan PostgreSQL melalui Supabase.
+| No. | Table | Deskripsi |
+|---:|---|---|
+| 1 | `profiles` | Profil dan role pengguna aplikasi |
+| 2 | `organization_profile` | Informasi profil organisasi |
+| 3 | `news` | Informasi berita dan publikasi |
+| 4 | `aspirations` | Data aspirasi |
+| 5 | `pengurus` | Data pengurus organisasi |
+| 6 | `alumni` | Data alumni |
+| 7 | `products` | Data produk organisasi |
+| 8 | `dad_registrations` | Data pendaftaran DAD |
+| 9 | `site_settings` | Pengaturan website |
+| 10 | `system_logs` | Catatan aktivitas sistem |
+| 11 | `divisions` | Data bidang atau divisi organisasi |
+| 12 | `agendas` | Data agenda kegiatan |
 
-Struktur database dikembangkan untuk mendukung kebutuhan aplikasi Kaizen Company, termasuk pengelolaan pengguna, berita, kegiatan, pendaftaran, pembayaran, divisi, dan aktivitas sistem.
+> Deskripsi tabel merupakan pengelompokan berdasarkan nama dan konteks penggunaannya. Detail fungsi setiap kolom harus mengacu pada definisi tabel aktual.
 
-## 2. Table Documentation
+## 2. Table Details
 
-Daftar berikut merupakan inventaris awal tabel yang ditemukan dalam kumpulan query historis. Detail kolom dan relasi perlu diverifikasi terhadap schema database Supabase yang sedang aktif.
+### 2.1 `profiles`
 
-| Table | Description | Verification |
-|---|---|---|
-| `news` | Menyimpan informasi berita dan publikasi | Perlu verifikasi |
-| `system_logs` | Menyimpan catatan aktivitas sistem | Perlu verifikasi |
-| `divisions` | Menyimpan informasi bidang atau divisi organisasi | Perlu verifikasi |
-| `dad_registrations` | Menyimpan data pendaftaran DAD | Perlu verifikasi |
-| `agendas` | Menyimpan informasi agenda atau kegiatan | Perlu verifikasi |
-| `profiles` | Menyimpan informasi profil pengguna | Perlu verifikasi |
+Menyimpan profil pengguna aplikasi yang terhubung dengan Supabase Auth.
 
-> Catatan: Daftar ini bukan representasi final seluruh tabel database. Struktur aktual harus diperiksa melalui Supabase sebelum dokumentasi dianggap final.
+Informasi struktur yang telah teridentifikasi:
 
-## 3. Schema Details
+| Column | Keterangan |
+|---|---|
+| `id` | UUID, primary key, sekaligus foreign key ke `auth.users.id` |
+| `email` | Email pengguna |
+| `full_name` | Nama lengkap |
+| `superadmin` | Kolom teks dengan default `'admin'` |
+| `role` | Role aplikasi dengan default `'admin'` |
+| `is_active` | Status aktif, default `true` |
 
-Detail setiap tabel akan didokumentasikan menggunakan format berikut.
+Kolom lainnya mengikuti hasil introspeksi database.
 
-### 3.1 Table: `news`
+### 2.2 `organization_profile`
 
-**Purpose:** Menyimpan informasi berita dan publikasi.
+Menyimpan informasi profil organisasi yang digunakan pada website.
 
-| Column | Data Type | Description |
-|---|---|---|
-| `id` | UUID | Primary key |
-| `title` | TEXT | Judul berita |
-| `slug` | TEXT | Identitas URL berita |
-| `category` | TEXT | Kategori berita |
-| `content` | TEXT | Isi berita |
-| `thumbnail` | TEXT | Referensi gambar thumbnail |
-| `status` | TEXT | Status publikasi |
-| `publish_date` | TIMESTAMPTZ | Waktu publikasi |
-| `author` | TEXT | Penulis berita |
-| `news_type` | TEXT | Jenis berita |
-| `created_at` | TIMESTAMPTZ | Waktu pembuatan |
+### 2.3 `news`
 
-**Verification Notes:**
-- Pastikan seluruh kolom telah tersedia pada schema aktif.
-- Periksa apakah `slug` memiliki constraint UNIQUE.
-- Periksa konsistensi definisi tabel dari query historis.
-- Pastikan kolom `author` dan `news_type` telah diterapkan.
+Menyimpan data berita atau publikasi organisasi.
 
-### 3.2 Table: `system_logs`
+Kolom yang telah teridentifikasi:
 
-**Purpose:** Menyimpan catatan aktivitas sistem.
+| Column | Keterangan |
+|---|---|
+| `slug` | Slug unik |
+| `gallery` | Kolom galeri |
+| `date` | Informasi tanggal |
+| `publish_date` | Informasi tanggal publikasi |
+| `author` | Penulis, default `'RPK IMM Kaizen'` |
+| `news_type` | Jenis berita, default `'pwmu'` |
+| `created_at` | Waktu pembuatan |
+| `updated_at` | Waktu pembaruan |
 
-Kolom yang ditemukan dalam query historis meliputi:
+Tipe data dan seluruh kolom lainnya mengikuti definisi aktual pada database.
 
-- `id`
-- `admin_name`
-- `action`
-- `target`
-- `type`
-- `user_email`
-- `module`
-- `details`
-- `created_at`
+### 2.4 `aspirations`
 
-Detail tipe data, constraint, dan nullable setiap kolom perlu diverifikasi terhadap schema aktif.
+Menyimpan data aspirasi yang dikirimkan melalui aplikasi.
 
-### 3.3 Table: `divisions`
+### 2.5 `pengurus`
 
-**Purpose:** Menyimpan informasi bidang atau divisi organisasi.
+Menyimpan data pengurus organisasi.
 
-Kolom yang ditemukan dalam query historis meliputi:
+### 2.6 `alumni`
 
-- `id`
-- `name`
-- `description`
-- `color`
-- `photo`
-- `created_at`
+Menyimpan informasi alumni.
 
-### 3.4 Table: `dad_registrations`
+### 2.7 `products`
 
-**Purpose:** Menyimpan informasi pendaftaran Darul Arqam Dasar (DAD).
+Menyimpan informasi produk organisasi.
 
-Query historis menunjukkan adanya perubahan pada informasi pendaftar, termasuk:
+### 2.8 `dad_registrations`
 
-- `nim`
-- `nomor_hp`
-- `alamat_sekarang`
-- `foto_url`
-- `bukti_pembayaran_path`
-- `status_pembayaran`
+Menyimpan data pendaftaran kegiatan Darul Arqam Dasar (DAD).
 
-Detail struktur lengkap perlu diverifikasi terhadap schema aktif.
+Kolom yang telah teridentifikasi:
 
-## 4. Relationships
+| Column | Keterangan |
+|---|---|
+| `bukti_pembayaran_path` | Path file bukti pembayaran pada Storage |
 
-Relasi antartabel belum ditetapkan dalam dokumentasi ini karena perlu diverifikasi dari foreign key dan struktur database aktual.
+Tabel ini memuat data pendaftaran yang bersifat personal. Pengelolaan akses dan file terkait perlu memperhatikan kebijakan privasi.
 
-Format dokumentasi relasi:
+### 2.9 `site_settings`
 
-| Source Table | Column | Referenced Table | Referenced Column | Relationship |
-|---|---|---|---|---|
-| To be verified | - | To be verified | - | To be verified |
+Menyimpan konfigurasi website.
 
-## 5. Constraints and Indexes
+### 2.10 `system_logs`
 
-Constraint dan index harus didokumentasikan berdasarkan struktur database aktual.
+Menyimpan catatan aktivitas sistem.
 
-Hal-hal yang perlu diperiksa:
-- Primary key
-- Foreign key
-- Unique constraint
-- Not null constraint
-- Default value
-- Check constraint
-- Index
+### 2.11 `divisions`
 
-## 6. Schema Change History
+Menyimpan data bidang atau divisi organisasi.
 
-Setiap perubahan struktur database harus dicatat dan memiliki referensi ke file migration terkait.
+### 2.12 `agendas`
 
-| Date | Change | Migration File | Status |
-|---|---|---|---|
-| To be documented | Initial schema review | - | Pending |
+Menyimpan data agenda kegiatan organisasi.
 
-## 7. Verification Status
+## 3. Database Constraints
 
-Dokumen ini masih merupakan inventaris awal berdasarkan query pengembangan.
+Hasil inventarisasi menemukan 60 constraints:
 
-Status final baru dapat ditetapkan setelah dilakukan pemeriksaan terhadap:
-1. Schema aktif Supabase.
-2. Seluruh tabel dan kolom.
-3. Foreign key dan constraint.
-4. Index.
-5. Trigger dan function.
-6. RLS policies.
+| Jenis Constraint | Jumlah |
+|---|---:|
+| Primary Key | 12 |
+| Foreign Key | 1 |
+| Unique | 1 |
+| Check | 46 |
+| **Total** | **60** |
+
+Jumlah tersebut merupakan hasil query metadata. Nama, kolom, dan definisi masing-masing constraint perlu dilihat pada hasil inventarisasi constraints.
+
+## 4. Indexes
+
+Ditemukan 13 indexes pada database yang diperiksa.
+
+Daftar nama dan definisi index perlu mengacu pada metadata index aktual. Tidak semua index otomatis merupakan index yang dibuat secara manual; beberapa dapat berkaitan dengan constraint.
+
+## 5. Views
+
+Pemeriksaan terhadap `pg_views` dan `pg_matviews` tidak menemukan application view maupun materialized view pada cakupan query yang dijalankan.
+
+## 6. Maintenance Notes
+
+- Perubahan skema harus dicatat sebagai migration.
+- Hindari perubahan langsung pada tabel production tanpa pemeriksaan dampak.
+- Constraint dan index perlu diperiksa sebelum mengubah struktur kolom.
+- SQL historis tidak boleh dianggap sebagai representasi tunggal kondisi database terkini.
+
+---
+
+**Source:** Supabase database metadata inspection.
