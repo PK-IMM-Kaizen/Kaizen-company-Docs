@@ -1,110 +1,95 @@
+# 🔐 Row Level Security (RLS)
 
-# Row Level Security (RLS) Policies
+Dokumen ini menjelaskan konfigurasi Row Level Security pada database Kaizen Company Platform.
 
-Dokumen ini menjelaskan pengaturan keamanan akses database menggunakan PostgreSQL Row Level Security (RLS) pada Supabase.
+## 1. RLS Status
 
-## 1. Overview
+Hasil pemeriksaan menunjukkan RLS aktif pada seluruh 12 tabel aplikasi di schema `public`.
 
-Row Level Security digunakan untuk mengontrol akses terhadap baris data berdasarkan role dan kondisi tertentu.
+| Metric | Result |
+|---|---:|
+| Application tables | 12 |
+| Tables with RLS enabled | 12 |
+| Tables without RLS | 0 |
+| Detected policies | 47 |
 
-RLS harus diterapkan sesuai kebutuhan akses masing-masing modul dan jenis pengguna.
+Angka 47 merupakan jumlah policy yang terdeteksi pada cakupan tabel aplikasi dan Storage, bukan jumlah policy khusus untuk schema `public` saja.
 
-## 2. Policy Documentation
+## 2. Application Roles
 
-Setiap policy harus didokumentasikan dengan informasi berikut:
+Aplikasi menggunakan dua role utama:
 
-| Attribute | Description |
+### Superadmin
+
+Superadmin memiliki seluruh hak operasional Admin, dengan tambahan kewenangan:
+
+- Membuat akun Admin.
+- Mengedit akun Admin.
+- Menghapus akun Admin.
+
+### Admin
+
+Admin memiliki hak operasional yang sama dengan Superadmin untuk mengelola modul aplikasi.
+
+Admin tidak memiliki kewenangan untuk membuat, mengedit, atau menghapus akun Admin lainnya.
+
+## 3. Supabase Database Roles
+
+Role aplikasi berbeda dari role PostgreSQL/Supabase.
+
+| Database Role | Fungsi |
 |---|---|
-| Table | Tabel yang dilindungi |
-| Policy Name | Nama policy |
-| Operation | SELECT, INSERT, UPDATE, atau DELETE |
-| Target Role | Role yang mendapatkan akses |
-| USING | Kondisi untuk mengakses baris |
-| WITH CHECK | Kondisi validasi data baru |
-| Purpose | Tujuan policy |
-| Review Status | Status pemeriksaan keamanan |
+| `anon` | Permintaan tanpa autentikasi |
+| `authenticated` | Permintaan dengan pengguna terautentikasi |
+| `service_role` | Role layanan dengan hak istimewa tinggi |
 
-## 3. Security Review Findings
+RLS menentukan baris data yang dapat diakses oleh suatu request berdasarkan policy yang berlaku.
 
-Berdasarkan kumpulan query historis, terdapat beberapa pola policy yang perlu ditinjau ulang sebelum digunakan pada production.
+Dengan demikian, GRANT database dan hak akses aplikasi harus dibaca sebagai dua lapisan yang berbeda.
 
-### 3.1 Unrestricted Access
+## 4. Policy Inventory
 
-Beberapa query menggunakan kondisi:
+Pemeriksaan menemukan policy dengan kondisi seperti:
+
+- `USING (true)`
+- `WITH CHECK (true)`
+- Policy dengan target role `public`
+
+Kondisi tersebut tidak otomatis berarti seluruh pengguna aplikasi memiliki akses penuh. Efek akhirnya bergantung pada operasi policy, target role, kombinasi policy permissive/restrictive, serta GRANT yang berlaku.
+
+Namun, policy dengan kondisi terbuka perlu ditinjau secara khusus, terutama pada tabel yang menyimpan data personal atau data administratif.
+
+## 5. Authentication Trigger
+
+Terdapat fungsi `handle_new_user()` yang dipanggil ketika user baru dibuat pada `auth.users`.
+
+Fungsi tersebut membuat record profil dengan role awal `admin`.
 
 ```sql
-USING (true)
-WITH CHECK (true)
+INSERT INTO public.profiles (id, email, role)
+VALUES (new.id, new.email, 'admin')
+ON CONFLICT (id) DO NOTHING;
 ```
 
-Kondisi tersebut dapat memberikan akses luas terhadap data, tergantung operasi dan role yang menjadi target policy.
+Perilaku ini merupakan bagian penting dari alur pembuatan akun. Dokumentasi ini mencatat perilaku yang ditemukan, bukan mengubah aturan provisioning akun production.
 
-**Required Review:**
-- Pastikan policy memiliki target role yang sesuai.
-- Hindari memberikan akses penuh tanpa kebutuhan yang jelas.
-- Batasi akses berdasarkan kepemilikan data atau hak pengguna.
-- Tinjau ulang policy untuk operasi SELECT, INSERT, UPDATE, dan DELETE secara terpisah.
+## 6. Security Review Notes
 
-### 3.2 User Profile and Role Assignment
+Hal-hal berikut perlu diperhatikan saat melakukan review policy:
 
-Query historis perlu diperiksa terkait mekanisme pembuatan profil dan pemberian role pengguna.
+1. Pastikan policy untuk tabel sensitif membatasi operasi sesuai kebutuhan aplikasi.
+2. Pastikan role aplikasi diperiksa melalui sumber data yang tepercaya.
+3. Hindari memberi pengguna kemampuan mengubah role dirinya sendiri tanpa kontrol otorisasi.
+4. Periksa policy `INSERT`, `UPDATE`, `DELETE`, dan `SELECT` secara terpisah.
+5. Periksa target role policy, termasuk penggunaan `public`.
+6. Pastikan akses file Storage konsisten dengan policy tabel yang menyimpan path file.
 
-**Required Review:**
-- Pastikan pengguna baru tidak otomatis memperoleh hak administrator.
-- Validasi sumber pemberian role.
-- Pastikan perubahan role hanya dapat dilakukan oleh pihak yang berwenang.
-- Periksa trigger dan function yang berkaitan dengan Supabase Auth.
+## 7. Audit Scope Limitation
 
-### 3.3 Storage Policies
+Inventarisasi saat ini telah mengonfirmasi status RLS dan jumlah policy. Akan tetapi, matriks izin final per tabel dan per operasi harus disusun dari definisi lengkap setiap policy.
 
-Bucket yang ditemukan dalam query historis antara lain:
+Dokumen ini tidak menyimpulkan bahwa semua policy yang ada sudah benar atau salah hanya berdasarkan jumlah policy dan keberadaan `USING (true)`.
 
-| Bucket | Purpose | Review |
-|---|---|---|
-| `dad_photos` | Penyimpanan foto pendaftar | Perlu pemeriksaan akses |
-| `dad_payments` | Penyimpanan bukti pembayaran | Perlu pemeriksaan akses |
-| `news_images` | Penyimpanan gambar berita | Perlu pemeriksaan akses |
+---
 
-**Required Review:**
-- Periksa apakah bucket harus public atau private.
-- Batasi akses upload berdasarkan kebutuhan pengguna.
-- Batasi update dan delete kepada pihak berwenang.
-- Pastikan file bukti pembayaran tidak dapat diakses publik.
-- Periksa batas ukuran dan MIME type file.
-- Pastikan policy tidak memberikan akses lintas bucket.
-
-### 3.4 Payment Evidence
-
-Query historis menunjukkan perubahan konfigurasi bucket `dad_payments` dari private menjadi public.
-
-Hal ini harus menjadi prioritas pemeriksaan karena bucket tersebut menyimpan bukti pembayaran.
-
-**Security Recommendation:**
-
-Gunakan bucket private untuk dokumen pembayaran. Berikan akses baca hanya kepada pihak yang berwenang melakukan verifikasi.
-
-## 4. Policy Review Checklist
-
-- [ ] Seluruh tabel sensitif telah mengaktifkan RLS.
-- [ ] Tidak terdapat akses publik yang tidak diperlukan.
-- [ ] Role `anon` dan `authenticated` telah dibedakan.
-- [ ] Operasi SELECT memiliki pembatasan yang sesuai.
-- [ ] Operasi INSERT memiliki validasi `WITH CHECK`.
-- [ ] Operasi UPDATE memiliki pembatasan `USING` dan `WITH CHECK` yang sesuai.
-- [ ] Operasi DELETE hanya diberikan kepada pihak berwenang.
-- [ ] Storage bucket memiliki konfigurasi akses yang tepat.
-- [ ] Bukti pembayaran tidak dapat diakses secara publik.
-- [ ] Trigger dan function telah diperiksa.
-- [ ] Tidak ada policy duplikat atau policy lama yang masih aktif tanpa alasan.
-
-## 5. Policy Change History
-
-| Date | Table / Bucket | Change | Review Status |
-|---|---|---|---|
-| To be documented | - | - | Pending |
-
-## 6. Security Notes
-
-Kumpulan SQL historis tidak boleh langsung dianggap sebagai konfigurasi keamanan final.
-
-Setiap policy perlu ditinjau berdasarkan kebutuhan akses aplikasi, role pengguna, dan sensitivitas data sebelum diterapkan pada production.
+**Source:** Supabase RLS status and policy metadata inspection.
