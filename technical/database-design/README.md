@@ -1,43 +1,94 @@
+# 🗄️ Database Design
 
-# Database Design
+Dokumentasi struktur dan konfigurasi database untuk **Kaizen Company Platform**.
 
-Dokumentasi ini berisi rancangan, struktur, keamanan, dan pengelolaan database untuk Kaizen Company.
+Database menggunakan **Supabase**, dengan PostgreSQL sebagai relational database dan Supabase Auth serta Supabase Storage sebagai layanan pendukung.
 
-Database menggunakan Supabase sebagai layanan backend database dan memanfaatkan PostgreSQL sebagai sistem manajemen basis data.
+## 📌 Overview
 
-## Documentation Index
+Dokumentasi ini menjelaskan kondisi database berdasarkan hasil pemeriksaan pada project Supabase yang sedang digunakan.
 
-| Document | Description |
+| Komponen | Hasil Pemeriksaan |
 |---|---|
-| [Database Schema](./database-schema.md) | Dokumentasi tabel, kolom, tipe data, dan relasi database |
-| [RLS Policies](./rls-policies.md) | Dokumentasi Row Level Security dan aturan akses data |
-| [SQL Documentation](./sql/README.md) | Panduan pengelolaan file SQL |
-| [SQL Migrations](./sql/migrations/README.md) | Perubahan struktur database yang telah ditinjau |
-| [SQL Seeds](./sql/seeds/README.md) | Data awal dan data pengembangan |
-| [SQL Archive](./sql/archive/README.md) | Arsip query historis |
-
-## Database Technology
-
-| Component | Technology |
-|---|---|
-| Database Management System | PostgreSQL |
-| Backend Platform | Supabase |
-| Database Access | Supabase Client |
+| Database | PostgreSQL (Supabase) |
+| Schema aplikasi | `public` |
 | Authentication | Supabase Auth |
-| File Storage | Supabase Storage |
-| Access Control | PostgreSQL Row Level Security (RLS) |
+| File storage | Supabase Storage |
+| Tabel aplikasi | 12 |
+| Kolom aplikasi | 103 |
+| Constraints | 60 |
+| Indexes | 13 |
+| Foreign keys | 27 terdeteksi pada schema `public` dan `auth` |
+| RLS | Aktif pada seluruh 12 tabel aplikasi |
+| RLS policies | 47 terdeteksi pada tabel aplikasi dan Storage |
+| Custom function | 1 fungsi aplikasi teridentifikasi |
+| Application views | Tidak ditemukan |
+| Application materialized views | Tidak ditemukan |
 
-## Documentation Principles
+> **Catatan:** Angka di atas merupakan hasil inventarisasi pada saat audit, bukan jaminan bahwa kondisi database tidak berubah setelah pemeriksaan dilakukan.
 
-1. Setiap perubahan struktur database harus terdokumentasi.
-2. Perubahan database yang digunakan sebagai acuan implementasi harus disimpan sebagai migration.
-3. Query untuk data awal dipisahkan dari migration.
-4. Query historis tidak langsung dianggap sebagai migration aktif.
-5. Setiap perubahan RLS harus melalui peninjauan keamanan.
-6. Dokumentasi harus diperbarui ketika struktur database berubah.
+## 📂 Documentation Index
 
-## Important Notes
+| Dokumen | Deskripsi |
+|---|---|
+| [Database Schema](./database-schema.md) | Daftar tabel dan gambaran struktur database |
+| [Relationships](./relationships.md) | Relasi antar tabel dan foreign key |
+| [RLS Policies](./rls-policies.md) | Row Level Security dan kebijakan akses |
+| [Storage Configuration](./storage-configuration.md) | Konfigurasi bucket dan akses file |
+| [Functions and Triggers](./functions-and-triggers.md) | Fungsi database dan trigger |
+| [Database Privileges](./database-privileges.md) | Hak akses PostgreSQL |
+| [SQL Audit Report](./review/sql-audit-report.md) | Temuan dan catatan audit SQL |
 
-File SQL pada folder `archive/` merupakan kumpulan query historis dari proses pengembangan. File tersebut tidak boleh langsung dijalankan sebagai satu rangkaian migration tanpa pemeriksaan dan penyesuaian terlebih dahulu.
+## 🧩 Application Tables
 
-Dokumentasi ini akan diperbarui seiring perkembangan database Kaizen Company.
+Database aplikasi memiliki 12 tabel pada schema `public`:
+
+1. `profiles`
+2. `organization_profile`
+3. `news`
+4. `aspirations`
+5. `pengurus`
+6. `alumni`
+7. `products`
+8. `dad_registrations`
+9. `site_settings`
+10. `system_logs`
+11. `divisions`
+12. `agendas`
+
+## 🔐 Access Control
+
+Aplikasi menggunakan dua jenis role utama:
+
+- **Superadmin** — memiliki seluruh hak operasional Admin serta kewenangan tambahan untuk membuat, mengedit, dan menghapus akun Admin.
+- **Admin** — memiliki hak operasional yang sama dengan Superadmin untuk mengelola modul aplikasi, tetapi tidak memiliki kewenangan pengelolaan akun Admin.
+
+Perbedaan role aplikasi tersebut tidak sama dengan role PostgreSQL seperti `anon`, `authenticated`, dan `service_role`.
+
+Akses data pada database juga dipengaruhi oleh konfigurasi GRANT dan Row Level Security (RLS).
+
+## 🗂️ SQL Repository
+
+SQL dipisahkan berdasarkan tujuan dan statusnya:
+
+| Direktori | Penggunaan |
+|---|---|
+| `sql/migrations/` | Perubahan struktur database yang terkontrol |
+| `sql/seeds/` | Data awal atau data referensi |
+| `sql/archive/` | SQL historis dan query lama |
+
+SQL historis tidak dianggap sebagai migration final. Setiap perubahan database production harus didokumentasikan dan ditinjau sebelum diterapkan.
+
+## ⚠️ Documentation Notes
+
+- Dokumentasi menggambarkan kondisi database berdasarkan hasil inspeksi.
+- Detail kebijakan RLS perlu merujuk pada definisi policy aktual, bukan hanya jumlah policy.
+- Objek internal Supabase pada schema `auth` dan `storage` dibedakan dari objek milik aplikasi.
+- Tidak ada migration yang dijalankan hanya dengan menyalin SQL dari arsip historis.
+- Perubahan pada database production harus dilakukan secara terkontrol.
+
+---
+
+**Project:** Kaizen Company Platform  
+**Database Provider:** Supabase  
+**Documentation Scope:** Database Structure, Relationships, Security, Storage, and SQL Audit
